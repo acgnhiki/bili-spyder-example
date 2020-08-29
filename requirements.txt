@@ -1,0 +1,6 @@
+aiohttp==3.6.2
+tenacity==6.2.0
+toml==0.10.1
+colorama==0.4.3
+https://github.com/acgnhiki/python-ext-wasm/releases/download/0.4.2-beta.11/wasmer-0.4.2_beta_11-cp38-cp38-manylinux1_x86_64.whl
+bili-spyder==0.1.0

@@ -127,3 +127,13 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# vscode
+.vscode/
+
+# conf
+conf/*.toml
+!conf/user.sample.toml
+
+# private folders
+_*/

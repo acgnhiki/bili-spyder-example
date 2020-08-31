@@ -309,7 +309,22 @@ async def main(args):
         e.shutdown(True)
 
 if __name__ == '__main__':
-    try:
-        asyncio.run(main(get_args()))
-    except KeyboardInterrupt:
-        pass
+    if hasattr(asyncio, 'run'):
+        try:
+            asyncio.run(main(get_args()))
+        except KeyboardInterrupt:
+            pass
+    else:
+        if not hasattr(asyncio, 'create_task'):
+            asyncio.create_task = asyncio.ensure_future
+
+        if not hasattr(asyncio, 'get_running_loop'):
+            asyncio.get_running_loop = asyncio.get_event_loop
+
+        try:
+            loop = asyncio.get_event_loop()
+            loop.run_until_complete(main(get_args()))
+        except KeyboardInterrupt:
+            pass
+        finally:
+            loop.close()

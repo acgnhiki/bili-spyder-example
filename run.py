@@ -115,6 +115,7 @@ class SmallHeartTask(DailyTask):
         self.user = user
         self.MAX_HEARTS_PER_DAY = 24
         self.MAX_CONCURRENT_ROOMS = self.MAX_HEARTS_PER_DAY
+        self.HEART_INTERVAL = 300
 
     def timeout_handler(self):
         logger.warning(f'今天小心心任务未能完成（用户{self.user.num}：{self.user.name}）')
@@ -195,7 +196,7 @@ class SmallHeartTask(DailyTask):
         for room_info in room_infos:
             task = asyncio.create_task(self.post_heartbeats(*room_info))
             tasks.append(task)
-            logger.info(f'{room_info.room_id}号直播间心跳任务开始（用户{num}：{uname}）')
+            logger.debug(f'{room_info.room_id}号直播间心跳任务开始（用户{num}：{uname}）')
 
     async def post_heartbeats(self, room_id, parent_area_id, area_id):
         session = self.session
@@ -211,13 +212,13 @@ class SmallHeartTask(DailyTask):
 
             try:
                 result = await WebApi.post_enter_room_heartbeat(session, csrf, buvid, uuid, room_id, parent_area_id, area_id)
-                logger.info(f'进入{room_id}号直播间心跳已发送（用户{num}：{uname}）')
+                logger.debug(f'进入{room_id}号直播间心跳已发送（用户{num}：{uname}）')
                 logger.debug(f'进入{room_id}号直播间心跳发送结果（用户{num}：{uname}）: {result}')
 
                 while True:
                     sequence += 1
                     interval = result['heartbeat_interval']
-                    # logger.info(f'{interval}秒后发送第{sequence}个{room_id}号直播间内心跳（用户{num}：{uname}）')
+                    logger.debug(f'{interval}秒后发送第{sequence}个{room_id}号直播间内心跳（用户{num}：{uname}）')
                     await asyncio.sleep(interval)
 
                     result = await WebApi.post_in_room_heartbeat(
@@ -229,16 +230,21 @@ class SmallHeartTask(DailyTask):
                         result['secret_rule'],
                     )
 
-                    n = queue.get_nowait()
-
-                    logger.info(f'第{sequence}个{room_id}号直播间内心跳已发送，完成第{n}个小心心心跳。（用户{num}：{uname}）')
+                    logger.debug(f'第{sequence}个{room_id}号直播间内心跳已发送（用户{num}：{uname}）')
                     logger.debug(f'第{sequence}个{room_id}号直播间内心跳发送结果（用户{num}：{uname}）: {result}')
-                    queue.task_done()
+
+                    assert self.HEART_INTERVAL % interval == 0, interval
+                    heartbeats_per_heart = self.HEART_INTERVAL // interval
+
+                    if sequence % heartbeats_per_heart == 0:
+                        n = queue.get_nowait()
+                        logger.info(f'获得第{n}个小心心（用户{num}：{uname}）')
+                        queue.task_done()
             except asyncio.QueueEmpty:
-                logger.info(f'小心心任务已完成, {room_id}号直播间心跳任务终止。（用户{num}：{uname}）')
+                logger.debug(f'小心心任务已完成, {room_id}号直播间心跳任务终止。（用户{num}：{uname}）')
                 break
             except CancelledError:
-                logger.info(f'{room_id}号直播间心跳任务取消（用户{num}：{uname}）')
+                logger.debug(f'{room_id}号直播间心跳任务取消（用户{num}：{uname}）')
                 raise
             except Exception as e:
                 if sequence == 0:

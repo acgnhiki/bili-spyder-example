@@ -87,7 +87,7 @@ class DailyTask:
                 self.timeout_handler()
 
             seconds = self.seconds_to_tomorrow() + deviation
-            await asyncio.sleep(seconds)
+            await self.sleep(seconds)
 
     async def do_work(self):
         pass
@@ -100,6 +100,13 @@ class DailyTask:
         now = datetime.now()
         delta = now.replace(hour=23, minute=59, second=59) - now
         return delta.total_seconds() + 1
+
+    @staticmethod
+    async def sleep(seconds):
+        ts = datetime.now().timestamp() + seconds
+
+        while datetime.now().timestamp() <= ts:
+            await asyncio.sleep(300)
 
 RoomInfo = namedtuple('RoomInfo', 'room_id, parent_area_id, area_id')
 

@@ -13,7 +13,7 @@ from concurrent.futures import ProcessPoolExecutor
 
 import aiohttp
 import toml
-from colorama import init, Fore, Back, Style
+from colorama import init, deinit, Fore, Back, Style
 from bili_spyder import set_executor
 
 from api import WebApi
@@ -50,7 +50,7 @@ def extract_csrf(cookie):
         return re.search(r'bili_jct=([^;]+);', cookie).group(1)
     except Exception:
         return None
-    
+
 def extract_buvid(cookie):
     try:
         return re.search(r'LIVE_BUVID=([^;]+);', cookie).group(1)
@@ -98,7 +98,7 @@ class DailyTask:
     @staticmethod
     def seconds_to_tomorrow():
         now = datetime.now()
-        delta = now.replace(hour=23, minute=59, second=59) - now 
+        delta = now.replace(hour=23, minute=59, second=59) - now
         return delta.total_seconds() + 1
 
 RoomInfo = namedtuple('RoomInfo', 'room_id, parent_area_id, area_id')
@@ -279,7 +279,7 @@ def configure_logging(*, name='root', filename='logging.log', debug=False):
     # ...
 
 def get_args():
-    parser = argparse.ArgumentParser(description='') 
+    parser = argparse.ArgumentParser(description='')
     parser.add_argument('--debug', action='store_true',
         help='enable logging debug information')
     args = parser.parse_args()
@@ -307,6 +307,7 @@ async def main(args):
     finally:
         set_executor(None)
         e.shutdown(True)
+        deinit()
 
 if __name__ == '__main__':
     if hasattr(asyncio, 'run'):
